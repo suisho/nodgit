@@ -7,7 +7,7 @@ var clientDir = "./client"
 
 // Create server
 var port = 8030
-var app = require("./app/index.js");
+var app = require("./app/server.js");
 var server = app.createServer(port);
 server.listen(8030)
 
@@ -21,44 +21,17 @@ var opts = {
   port: port,
   index:  "/index.html",
 };
-
-
-var chrome = require("chromety")(opts)
-
-// process　と　chrome　はｽﾞｯ友だょ
-
-var exit = function(msg){
-  try{
-    chrome.kill();
-  }catch(e){
-    console.log(e);
-  }
-  process.exit()
-}
-chrome.on('exit', function (code) {
-  console.log("Chrome is exit");
-  process.exit()
-});
-
-// 悲しみのwin32
-// しかも動かないよ。
-if(process.platform === "win32"){
-  var keypress = require("keypress");
-  keypress(process.stdin);
-  process.stdin.resume();
-  process.stdin.setRawMode(true);
-  process.stdin.setEncoding("utf8");
-  process.stdin.on("keypress", function(char, key) {
-    if (key && key.ctrl && key.name == "c") {
-      // Behave like a SIGUSR2
-      process.emit("SIGUSR2");
-    }
+var onlyServer = true
+if(!onlyServer){
+  var chrome = require("chromety")(opts)
+  chrome.on('exit', function (code) {
+    console.log("Chrome is exit");
+    process.exit()
   });
+  var killer = require("./killer");
+  killer(function(){
+    if(chrome){
+      chrome.kill();
+    }
+  })
 }
-process.on('SIGINT', function (msg) { exit(msg) })
-process.on('SIGHUP', function () { exit() })
-process.on('CTRL_C_EVENT', function (msg) { exit(msg) })
-process.on('exit', function(msg){exit(msg) })
-process.on('SIGUSR2', function(msg){exit(msg) })
-
-
